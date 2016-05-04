@@ -1,0 +1,79 @@
+&share
+ wrf_core = 'ARW',
+ max_dom = 2,
+ start_date = '{startdate}', '{startdate}', '{startdate}',
+ end_date   = '{enddate}', '{enddate}','{enddate}',
+ interval_seconds = 10800,
+ io_form_geogrid = 2,
+ debug_level = 0,
+/
+
+&geogrid
+ parent_id         = 1,1
+ parent_grid_ratio = 1,4
+ i_parent_start    = 1,154
+ j_parent_start    = 1,104
+ e_we          = 279,169
+ e_sn          = 212,113
+ geog_data_res = '5m','2m'
+ dx = 16000,
+ dy = 16000,
+ map_proj =  'lambert',
+ ref_lat   = 37.5,
+ ref_lon   = -84,
+ truelat1  = 37.5,
+ truelat2  = 37.5,
+ stand_lon = -82,
+ geog_data_path = '/home/wrf/geog',
+ opt_geogrid_tbl_path = '/home/wrf/WRF3.7.1/WPS/geogrid',
+ ref_x = 139.5,
+ ref_y = 106.0,
+/
+
+&ungrib
+ out_format = 'WPS',
+ prefix = 'FILE',
+/
+
+&metgrid
+ fg_name = 'FILE',
+ io_form_metgrid = 2,
+ opt_metgrid_tbl_path = '/home/wrf/WRF3.7.1/WPS/metgrid',
+/
+
+&mod_levs
+ press_pa = 201300 , 200100 , 100000 ,
+             95000 ,  90000 ,
+             85000 ,  80000 ,
+             75000 ,  70000 ,
+             65000 ,  60000 ,
+             55000 ,  50000 ,
+             45000 ,  40000 ,
+             35000 ,  30000 ,
+             25000 ,  20000 ,
+             15000 ,  10000 ,
+              5000 ,   1000
+ /
+
+
+&domain_wizard
+ grib_data_path = 'null',
+ grib_vtable = 'null',
+ dwiz_name    =test
+ dwiz_desc    =
+ dwiz_user_rect_x1 =532
+ dwiz_user_rect_y1 =237
+ dwiz_user_rect_x2 =629
+ dwiz_user_rect_y2 =337
+ dwiz_show_political =true
+ dwiz_center_over_gmt =true
+ dwiz_latlon_space_in_deg =10
+ dwiz_latlon_linecolor =-8355712
+ dwiz_map_scale_pct =12.5
+ dwiz_map_vert_scrollbar_pos =0
+ dwiz_map_horiz_scrollbar_pos =146
+ dwiz_gridpt_dist_km =12.0
+ dwiz_mpi_command =null
+ dwiz_tcvitals =null
+ dwiz_bigmap =Y
+/

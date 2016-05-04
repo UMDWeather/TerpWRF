@@ -1,0 +1,117 @@
+&time_control            
+start_year               = {start_yr}, {start_yr}, {start_yr},
+start_month              = {start_mn}, {start_mn}, {start_mn},
+start_day                = {start_dy}, {start_dy}, {start_dy},
+start_hour               = {start_hh}, {start_hh}, {start_hh},
+start_minute             = {start_mm}, {start_mm}, {start_mm},
+start_second             = {start_ss}, {start_ss}, {start_ss},
+end_year                 = {end_yr}, {end_yr},  {end_yr},
+end_month                = {end_mn}, {end_mn},  {end_mn},
+end_day                  = {end_dy}, {end_dy},  {end_dy},
+end_hour                 = {end_hh}, {end_hh},  {end_hh},
+end_minute               = {end_mm}, {end_mm},  {end_mm},
+end_second               = {end_ss}, {end_ss},  {end_ss},
+interval_seconds         = 10800,
+input_from_file          = .true.,   .true.,   .true.,
+history_interval         = 60,       60,       60,
+frames_per_outfile       = 1000,     1000,     1000,
+restart                  = .false.,
+restart_interval         = 5000,
+io_form_history          = 2,
+io_form_restart          = 2,
+io_form_input            = 2,
+io_form_boundary         = 2,
+debug_level              = 0,
+/
+
+&domains                 
+eta_levels   = 1.000, 0.9937, 0.9874, 0.9811, 0.9748,
+                0.9686, 0.9617, 0.9539, 0.9449, 0.9343,
+                0.9217, 0.9063, 0.8875, 0.8647, 0.8369,
+                0.8037, 0.7647, 0.7199, 0.6699, 0.6155,
+                0.558, 0.4988, 0.439, 0.38, 0.3225,
+                0.2674, 0.2149, 0.1656, 0.1194, 0.0764,
+                0.0366, 0.000
+time_step                = 96,
+time_step_fract_num      = 0,
+time_step_fract_den      = 1,
+use_adaptive_time_Step   = .true.
+max_dom                  = 2,
+e_we                     = 279,      169
+e_sn                     = 212,      113
+e_vert                   = 32,       32
+p_top_requested          = 5000.,
+num_metgrid_levels       = 27,
+num_metgrid_soil_levels  = 4,
+dx                       = 16000,     4000
+dy                       = 16000,     4000
+grid_id                  = 1,        2
+parent_id                = 1,        1
+i_parent_start           = 1,       154
+j_parent_start           = 1,       104
+parent_grid_ratio        = 1,        4
+parent_time_step_ratio   = 1,        4
+feedback                 = 1,
+smooth_option            = 0,
+/
+
+&physics                 
+mp_physics               = 3,        3
+ra_lw_physics            = 1,        1
+ra_sw_physics            = 1,        1
+radt                     = 10,       10
+sf_sfclay_physics        = 1,        1
+sf_surface_physics       = 2,        2
+bl_pbl_physics           = 1,        1
+bldt                     = 0,        0
+cu_physics               = 1,        0
+cudt                     = 5,        5
+isfflx                   = 1,
+ifsnow                   = 0,
+icloud                   = 1,
+surface_input_source     = 1,
+num_soil_layers          = 4,
+sf_urban_physics         = 0,        0
+maxiens                  = 1,
+maxens                   = 3,
+maxens2                  = 3,
+maxens3                  = 16,
+ensdim                   = 144,
+/
+
+&fdda                    
+/
+
+&dynamics                
+w_damping                = 0,
+diff_opt                 = 1,
+km_opt                   = 4,
+diff_6th_opt             = 0,        0,        0,
+diff_6th_factor          = 0.12,     0.12,     0.12,
+base_temp                = 290.,
+damp_opt                 = 0,
+zdamp                    = 5000.,    5000.,    5000.,
+dampcoef                 = 0.2,      0.2,      0.2,
+khdif                    = 0,        0,        0,
+kvdif                    = 0,        0,        0,
+non_hydrostatic          = .true.,   .true.,   .true.,
+moist_adv_opt            = 1,        1,        1,
+scalar_adv_opt           = 1,        1,        1,
+/
+
+&bdy_control             
+spec_bdy_width           = 5,
+spec_zone                = 1,
+relax_zone               = 4,
+specified                = .true.,  .false.,  .false.,
+nested                   = .false.,   .true.,   .true.,
+/
+
+&grib2                   
+/
+
+&namelist_quilt          
+nio_tasks_per_group      = 0,
+nio_groups               = 1,
+/
+                                                                                                                                                      
