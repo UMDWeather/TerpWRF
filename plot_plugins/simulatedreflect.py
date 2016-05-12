@@ -6,7 +6,7 @@ from scipy.ndimage.filters import minimum_filter, maximum_filter
 from mpl_toolkits.basemap import cm
 
 filename='simulatedreflect'
-title ='Simulated Refectivity (dBZ)'
+title ='Simulated Reflectivity (dBZ)'
 boundaryColor = 'gray'
 frequency = 3                   # frequency in hrs
 

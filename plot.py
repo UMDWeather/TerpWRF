@@ -49,11 +49,23 @@ if res =='h':
   m= Basemap(width=600000, height=400000, rsphere=(6378137.00,6356752.3142),
             resolution='h',area_thresh=1000.,projection='lcc',
             lat_1=39,lat_2=39,lat_0=39,lon_0=-77.5)
+  stationFile = '/home/wrf/scripts/stations.toplot'
+  stations = np.genfromtxt(stationFile,delimiter=',',skip_header=2,dtype='str')
+  station_lat = stations[:,0]
+  station_lon = stations[:,1]
+  station_code = stations[:,2]
+  slon,slat = m(station_lon,station_lat)
+  pltenv['slon'] = slon
+  pltenv['slat'] = slat
+  pltenv['station_code'] = station_code
+
+
 else:
   m= Basemap(width=4300000, height=3100000, rsphere=(6378137.00,6356752.3142),
             resolution='l',area_thresh=1000.,projection='lcc',
             lat_1=37.5,lat_2=37.5,lat_0=37.5,lon_0=-84.)
-
+  
+            
 x,y = m(lons,lats)
 
 pltenv['map'] = m
@@ -91,9 +103,21 @@ for p in plugins:
     pltenv['map'].drawcoastlines(color= p.boundaryColor)
     pltenv['map'].drawcountries(color=p.boundaryColor)
     pltenv['map'].drawstates(color=p.boundaryColor)
+       
     plt.title(p.title,fontweight='bold')
     
     p.plot(ncd.variables,pncd.variables, pltenv, timestep)
+    
+    if res == 'h':
+
+       m.plot(pltenv['slon'], pltenv['slat'], 'ko', markersize=10)
+
+       labels =  pltenv['station_code']
+       for label, xpt, ypt in zip(labels, pltenv['slon'], pltenv['slat']):
+           plt.text(xpt+1000, ypt+2500, label)
+
+    else: 
+       pass 
 
     #colorbar
     #TODO, move this to sub routines

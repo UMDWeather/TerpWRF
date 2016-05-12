@@ -117,9 +117,11 @@ if startdate:
     sp=subprocess.Popen('python plot.py l '+wrkDir,cwd='/home/wrf/scripts', shell=True)    
     sp=subprocess.Popen('python plot.py h '+wrkDir,cwd='/home/wrf/scripts', shell=True)    
     # generate meteograms
-    sp=subprocess.Popen('python meteogram.py h '+wrkDir+' /home/wrf/scripts/stations.toplot',cwd='/home/wrf/scripts',shell=True)
+    sp=subprocess.Popen('python meteogram.py h '+wrkDir+' /home/wrf/scripts/stations.toplot.highres',cwd='/home/wrf/scripts',shell=True)
+    sp=subprocess.Popen('python meteogram.py l '+wrkDir+' /home/wrf/scripts/stations.toplot.lowres',cwd='/home/wrf/scripts',shell=True)
     # generate soundings
-    sp=subprocess.Popen('python sounding.py h '+wrkDir+' /home/wrf/scripts/stations.toplot',cwd='/home/wrf/scripts',shell=True)
+    sp=subprocess.Popen('python sounding.py h '+wrkDir+' /home/wrf/scripts/stations.toplot.highres',cwd='/home/wrf/scripts',shell=True)
+    sp=subprocess.Popen('python sounding.py l '+wrkDir+' /home/wrf/scripts/stations.toplot.lowres',cwd='/home/wrf/scripts',shell=True)
 
     # cleanup old tmp directories and model output.
     #  leave only the previous day of runs in the /var/tmp directory
