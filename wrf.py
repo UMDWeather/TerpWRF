@@ -43,10 +43,14 @@ def bdyAvail(model='GFS'):
                 if re.match('^gfs\.t..z\.pgrb2.0p25.f[0-9]+$',sd):
                     matches.append(sd)
 		
-            if len(matches) >= 65:
-                matches=sorted(matches)
-                if matches[64][-3:]=='192' :
-                    dates.append(dt.datetime.strptime(d,'gfs.%Y%m%d%H'))
+            #if len(matches) >= 65:
+            #    matches=sorted(matches)
+            #    if matches[64][-3:]=='192' :
+            #        dates.append(dt.datetime.strptime(d,'gfs.%Y%m%d%H'))
+	    if len(matches) >= 97:
+		 matches=sorted(matches)
+		 if matches[96][-3:]=='096' :
+		     dates.append(dt.datetime.strptime(d,'gfs.%Y%m%d%H'))
 
     ftp.quit()
     log.debug('{0} {1} output dates found online at {2}'.format(len(dates),model,www_ncep+www_gfs))
