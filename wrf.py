@@ -4,15 +4,17 @@ import logging
 import re
 import ftplib
 import os
+import time
 
 log = logging.getLogger(__name__)
 
 
-www_ncep='ftp.ncep.noaa.gov'
+www_ncep='ftp.i.ncep.noaa.gov'
 www_gfs='/pub/data/nccf/com/gfs/prod'
 
 defaultVersion='WRF3.7.1'
 configFiles=os.path.realpath('./config')
+
 
 #------------------------------------------------------------------------------------------------
 def bdyAvail(model='GFS'):
@@ -47,17 +49,22 @@ def bdyAvail(model='GFS'):
             #    matches=sorted(matches)
             #    if matches[64][-3:]=='192' :
             #        dates.append(dt.datetime.strptime(d,'gfs.%Y%m%d%H'))
-	    if len(matches) >= 97:
+	    if len(matches) >= 121:
 		 matches=sorted(matches)
-		 if matches[96][-3:]=='096' :
+		 if matches[120][-3:]=='120' :
 		     dates.append(dt.datetime.strptime(d,'gfs.%Y%m%d%H'))
 
     ftp.quit()
     log.debug('{0} {1} output dates found online at {2}'.format(len(dates),model,www_ncep+www_gfs))
     log.debug('GFS dates range from {0} to {1} (most recent)'.format(str(dates[0]),str(dates[-1])))
+    print('GFS dates range from {0} to {1} (most recent)'.format(str(dates[0]),str(dates[-1])))
     return dates
 
 
+def dload(dfile,urldest):
+	import urllib
+	print('Downloading '+dfile)
+	urllib.urlretrieve(dfile,urldest)
 
 #------------------------------------------------------------------------------------------------
 def getBdy(date, dest, length='All', model='GFS'):
@@ -66,6 +73,7 @@ def getBdy(date, dest, length='All', model='GFS'):
     """
     log = getFnLog()
     import urllib
+    import multiprocessing
 
     if length == 'All':
         length = 384
@@ -77,12 +85,19 @@ def getBdy(date, dest, length='All', model='GFS'):
     log.info('Downloading {0} boundary conditions starting {1} for {2} hours'.format(model,str(date), length))
     filename_template=date.strftime('gfs.t%Hz.pgrb2.0p25.f{0:03}')
 
+
     for fcstHr in range(0,length+1,3):
         filename=filename_template.format(fcstHr)
+	url = 'ftp://{0}{1}/{2}/{3}'.format(www_ncep,www_gfs,date.strftime('gfs.%Y%m%d%H'),filename)
+	urldest = dest+'/'+filename
         log.info('Downloading {0} ...'.format(filename))
-        urllib.urlretrieve('ftp://{0}{1}/{2}/{3}'.format(www_ncep,www_gfs,date.strftime('gfs.%Y%m%d%H'),filename)
-                           ,dest+'/'+filename)
+	exec('p'+str(fcstHr)+' = multiprocessing.Process(target=dload, args=(url,urldest))')
 
+	exec('p'+str(fcstHr)+'.start()')
+	time.sleep(1)
+    exec('p'+str(fcstHr)+'.join()')
+        #urllib.urlretrieve('ftp://{0}{1}/{2}/{3}'.format(www_ncep,www_gfs,date.strftime('gfs.%Y%m%d%H'),filename)
+        #                   ,dest+'/'+filename)
 
 
 #------------------------------------------------------------------------------------------------

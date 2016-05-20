@@ -39,6 +39,7 @@ debug = False
 
 #-------------------------------------------------------
 #-------------------------------------------------------
+begintime = time.time()
 
 
 @contextmanager
@@ -130,7 +131,10 @@ if startdate:
     for d in dirs:
         log.info(' Removing {0}'.format(d))
         shutil.rmtree(d)
-
+    # email when completed
+    duration = time.time() - begintime
+    #log.info('php sendmail.php '+startdate.strftime('%H')+' '+str(duration/60.))
+    sp=subprocess.Popen('php sendmail.php '+startdate.strftime('%H')+' '+str(duration/60.),cwd='/home/wrf/scripts',shell=True)
 
 log.debug('Removing old runs')
 dirs = sorted(glob(outputDir+'/??????????'))
