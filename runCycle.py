@@ -28,6 +28,7 @@ import shutil
 import subprocess
 import time
 import wrf
+import wrfdb
 
 def run():
     '''Runs the WRF using the most recent boundary conditions
@@ -58,6 +59,8 @@ def run():
         shutil.rmtree(tmpDir)    
     else:
         log.info('using temporary directory {0}'.format(tmpDir))
+    # send message to database that model is starting
+    wrfdb.status('TerpWRF is starting soon...',1,startdate.strftime("%HZ"))
     os.makedirs(tmpDir)
     wrf.lnkWPS(tmpDir)
     wrf.lnkWRF(tmpDir)
@@ -68,40 +71,48 @@ def run():
 
     #geogrid.exe
     log.info('Running geogrid...')
+    wrfdb.status('Running geogrid...',2,startdate.strftime("%HZ"))
     sp=subprocess.Popen(tmpDir+'/geogrid.exe > geogrid.out 2> geogrid.err',cwd=tmpDir,shell=True)
     sp.wait()
     log.info('Geogrid run complete')
 
     #Get the GFS boundary conditions
+    wrfdb.status('Downloading GFS boundary conditions...',3,startdate.strftime("%HZ"))
     wrf.getBdy(startdate, tmpDir, length=fcstLength)
 
     #create the boundary / initial conditions for WRF
     log.info('running link_grib.csh...')
     sp=subprocess.Popen([tmpDir+'/link_grib.csh','gfs.t*'],cwd=tmpDir)
     sp.wait()
+    
 
+    wrfdb.status('Extracting vars from GFS GRIB files...',4,startdate.strftime("%HZ"))
     log.info('Running ungrib.exe ...')
     sp=subprocess.Popen('./ungrib.exe > ungrib.out 2> ungrib.err',cwd=tmpDir, shell=True)
     sp.wait()
     log.info('Ungrib run complete')
 
+    wrfdb.status('Preprocessing meteorological input...',5,startdate.strftime("%HZ"))
     log.info('Running metgrid.exe ...')
     sp=subprocess.Popen('./metgrid.exe > metgrid.out 2> metgrid.err',cwd=tmpDir, shell=True)
     sp.wait()
     log.info('Metgrid run complete')
 
+    wrfdb.status('Initializing WRF model...',6,startdate.strftime("%HZ"))
     log.info('Running real.exe ...')
     sp=subprocess.Popen('./real.exe > real.out 2> real.err',cwd=tmpDir, shell=True)
     sp.wait()
     log.info('Real run complete')
 
     #run WRF
+    wrfdb.status('TerpWRF is running...',7,startdate.strftime("%HZ"))
     log.info('Running WRF.exe ...')
     sp=subprocess.Popen('mpirun -n 36 ./wrf.exe > wrf.out 2> wrf.err',cwd=tmpDir, shell=True)
     sp.wait()
     log.info('WRF run complete')
 
     #post process onto pressure levels
+    wrfdb.status('Post processing WRF output...',8,startdate.strftime("%HZ"))
     log.info('Post processing WRF output...')
     sp=subprocess.Popen('cp -f ./namelist.vinterp1 namelist.vinterp',cwd=tmpDir, shell=True)
     sp.wait()

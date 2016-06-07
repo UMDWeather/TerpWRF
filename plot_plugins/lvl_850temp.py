@@ -6,7 +6,8 @@ from scipy.ndimage.filters import minimum_filter, maximum_filter
 from mpl_toolkits.basemap import cm
 
 filename='lvl_850temp'
-title ='850mb Temperature (C)'
+title ='850mb Temperature'
+cbarlabel = 'Temperature (C)'
 boundaryColor = 'gray'
 frequency = 3                   # frequency in hrs
 

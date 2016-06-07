@@ -6,7 +6,8 @@ from scipy.ndimage.filters import minimum_filter, maximum_filter
 from mpl_toolkits.basemap import cm
 
 filename='totalqpf'
-title ='Total precip (Inches)'
+title ='Total Precip to Forecast Hour'
+cbarlabel = 'Total Precip (inches)'
 boundaryColor = 'gray'
 frequency = 3                   # frequency in hrs
 

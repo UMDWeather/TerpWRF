@@ -6,8 +6,9 @@ from scipy.ndimage.filters import minimum_filter, maximum_filter
 from mpl_toolkits.basemap import cm
 
 filename='snow'
-title ='snow, total to forecast hour (in.)'
+title ='snow, total to forecast hour'
 boundaryColor = 'gray'
+cbarlabel = 'Snow Total (inches)'
 frequency = 3                   # frequency in hrs
 
 

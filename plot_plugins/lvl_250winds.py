@@ -8,6 +8,7 @@ from mpl_toolkits.basemap import cm
 
 filename='lvl_250winds'
 title ='250mb Winds'
+cbarlabel = 'Knots'
 boundaryColor = 'gray'
 frequency = 3                   # frequency in hrs
 

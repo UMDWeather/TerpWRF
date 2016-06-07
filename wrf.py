@@ -9,7 +9,7 @@ import time
 log = logging.getLogger(__name__)
 
 
-www_ncep='ftp.i.ncep.noaa.gov'
+www_ncep='ftp.ncep.noaa.gov'
 www_gfs='/pub/data/nccf/com/gfs/prod'
 
 defaultVersion='WRF3.7.1'

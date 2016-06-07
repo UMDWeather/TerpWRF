@@ -8,6 +8,7 @@ from mpl_toolkits.basemap import cm
 
 filename='lvl_500vorticity'
 title ='500mb Relative Vorticity'
+cbarlabel = 'X 10^-5 s^-1'
 boundaryColor = 'gray'
 frequency = 3                   # frequency in hrs
 

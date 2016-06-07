@@ -49,6 +49,8 @@ if res =='h':
   m= Basemap(width=600000, height=400000, rsphere=(6378137.00,6356752.3142),
             resolution='h',area_thresh=1000.,projection='lcc',
             lat_1=39,lat_2=39,lat_0=39,lon_0=-77.5)
+  # below plots dots on map of sounding locations
+  # NOTE @Troy, comment code when you modify things!
   stationFile = '/home/wrf/scripts/stations.toplot'
   stations = np.genfromtxt(stationFile,delimiter=',',skip_header=2,dtype='str')
   station_lat = stations[:,0]
@@ -90,14 +92,15 @@ for p in plugins:
     ctime = domain['start'] + dt.timedelta(hours=timestep)
 
     #annotations, boundaries, etc
-    ax.annotate('init:  '+domain['start'].strftime('%Y-%m-%d %HZ'),xy=(1,1.03),fontsize=9,
+    ax.annotate('init:  '+domain['start'].strftime('%Y-%m-%d %HZ'),xy=(1,1.05),fontsize=15,
               xycoords="axes fraction", horizontalalignment='right')
-    ax.annotate('valid: '+ctime.strftime('%Y-%m-%d %HZ'),xy=(1,1.01),fontsize=9,
+    ax.annotate('valid: '+ctime.strftime('%Y-%m-%d %HZ'),xy=(1,1.01),fontsize=15,
               xycoords="axes fraction", horizontalalignment='right')
-    ax.annotate('University of Maryland Dept. of Atmospheric and Oceanic Science',
+    ax.annotate('Univ. of Maryland - Dept. of Atmos. & Oceanic. Sci. - http://trowal.weather.umd.edu',
+    #ax.annotate('University of Maryland Dept. of Atmospheric and Oceanic Science',
               xy=(1.01,0), xycoords=('axes fraction'),rotation=90,horizontalalignment='left',verticalalignment='bottom',
-              color='gray',fontsize=8)
-    ax.annotate('EXPERIMENTAL', xy=(0,1.01), xycoords=('axes fraction'), horizontalalignment='left',
+              color='Black',fontsize=8)
+    ax.annotate('EXPERIMENTAL TerpWRF', xy=(0,1.01), xycoords=('axes fraction'), horizontalalignment='left',
               verticalalignment='bottom', color='red')
 
     pltenv['map'].drawcoastlines(color= p.boundaryColor)
@@ -127,6 +130,7 @@ for p in plugins:
     cw = 0.8
     cax=plt.axes([l + w*(1-cw)/2,b-ch-0.005,w*cw,ch])
     cb = plt.colorbar(cax=cax, orientation='horizontal')
+    cb.set_label(p.cbarlabel)
 
 
     plt.savefig(outputDir+'/{0}_F{1:03d}_{2}.png'.format(p.filename,timestep,plot_domain))

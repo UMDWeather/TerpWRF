@@ -6,7 +6,8 @@ from scipy.ndimage.filters import minimum_filter, maximum_filter
 from mpl_toolkits.basemap import cm
 
 filename='simulatedreflect'
-title ='Simulated Reflectivity (dBZ)'
+title ='Simulated Radar Reflectivity'
+cbarlabel = 'dBZ'
 boundaryColor = 'gray'
 frequency = 3                   # frequency in hrs
 
@@ -130,25 +131,28 @@ def plot(variables, pvars, pltenv, time):
     units = 'dBZ'
 
     radarcolors = [
-	"#ffffff",   
- 	"#73a26f",
-	"#4fa548",
-	"#26b91b",
-	"#16c909",
-	"#1ae30b",
-	"#08ff00",
-	"#ccff00",
-	"#ffcc00",
-	"#ff1b0b",
-	"#b71004",
-	"#7b0101",
-	"#7b0142",
-        ]
+	"#ffffff",
+	"#00ffff",
+	"#0099ff",
+	"#0000ff",
+	"#00ff00",
+	"#00cc00",
+	"#009900",
+	"#ffff00",
+	"#cccc00",
+	"#ff9900",
+	"#ff0000",
+	"#d40000",
+	"#bc0000",
+	"#ff00ff",
+	"#9966cc",
+	"#ffffff"
+	]
+
 
     colormap = mpl.colors.ListedColormap(radarcolors)
-    levels = [0,5,10,15,20,25,30,35,40,45,50,55,60]
-    norm = mpl.colors.BoundaryNorm(levels, 14)
+    levels = [0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75]
+    norm = mpl.colors.BoundaryNorm(levels, 16)
 
-    m.contourf(x,y, dBZ, levels, cmap=colormap, norm=norm, extend="both")
-   
+    m.contourf(x,y, dBZ, levels,cmap=colormap,norm=norm,extend="both",alpha=0.7)
 

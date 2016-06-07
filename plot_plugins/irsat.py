@@ -6,7 +6,8 @@ from scipy.ndimage.filters import minimum_filter, maximum_filter
 from mpl_toolkits.basemap import cm
 
 filename='irsat'
-title ='Simulated IR Satellite (C)'
+title ='Simulated IR Satellite'
+cbarlabel = 'Cloud Temperature (C)'
 boundaryColor = 'gray'
 frequency = 3                   # frequency in hrs
 

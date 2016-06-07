@@ -7,6 +7,7 @@ from mpl_toolkits.basemap import cm
 
 filename='lvl_850RH'
 title ='850mb Relative Humidity and Thickness'
+cbarlabel = 'Relative Humidity (%)'
 boundaryColor = 'gray'
 frequency = 3                   # frequency in hrs
 

@@ -7,6 +7,7 @@ from mpl_toolkits.basemap import cm
 
 filename='10meterwinds'
 title ='10 Meter Winds and MSLP'
+cbarlabel = 'knots'
 boundaryColor = 'gray'
 frequency = 3                   # frequency in hrs
 

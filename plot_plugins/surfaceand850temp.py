@@ -7,6 +7,7 @@ from mpl_toolkits.basemap import cm
 
 filename='surfaceand850temp'
 title ='MSLP / 850mb Temp (C) / 3 Hour Precip'
+cbarlabel = '3-hr QPF (inches)'
 boundaryColor = 'gray'
 frequency = 3                   # frequency in hrs
 

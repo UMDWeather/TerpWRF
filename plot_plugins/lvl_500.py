@@ -7,6 +7,7 @@ from mpl_toolkits.basemap import cm
 
 filename='lvl_500'
 title ='500mb Geopotential Height'
+cbarlabel = 'Geopotential Height (dam)'
 boundaryColor = 'gray'
 frequency = 3                   # frequency in hrs
 

@@ -6,7 +6,8 @@ from scipy.ndimage.filters import minimum_filter, maximum_filter
 from mpl_toolkits.basemap import cm
 
 filename='t2'
-title ='2m Temperature (F)'
+title ='2m Temperature'
+cbarlabel = 'Temperature (F)'
 boundaryColor = 'gray'
 frequency = 3                   # frequency in hrs
 

@@ -6,7 +6,8 @@ from scipy.ndimage.filters import minimum_filter, maximum_filter
 from mpl_toolkits.basemap import cm
 
 filename='surface'
-title ='MSLP / 1000mb-500mb thicknes / total precip'
+title ='MSLP / 1000mb-500mb thicknes / 3-hr precip'
+cbarlabel = '3-hour QPF (inches)'
 boundaryColor = 'gray'
 frequency = 3                   # frequency in hrs
 

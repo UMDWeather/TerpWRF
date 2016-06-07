@@ -6,7 +6,8 @@ from scipy.ndimage.filters import minimum_filter, maximum_filter
 from mpl_toolkits.basemap import cm
 
 filename='surfacedewpoint'
-title ='Surface Dew Point (F)'
+title ='Surface Dew Point'
+cbarlabel = 'Dew Point Temperature (F)'
 boundaryColor = 'gray'
 frequency = 3                   # frequency in hrs
 

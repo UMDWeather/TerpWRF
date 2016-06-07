@@ -6,7 +6,8 @@ from scipy.ndimage.filters import minimum_filter, maximum_filter
 from mpl_toolkits.basemap import cm
 
 filename='lvl_700'
-title ='700mb stuff'
+title ='700mb Heights and Relative Humidity'
+cbarlabel = 'Relative Humidity (%)'
 boundaryColor = 'gray'
 frequency = 3                   # frequency in hrs
 
