@@ -22,6 +22,11 @@ io_form_restart          = 2,
 io_form_input            = 2,
 io_form_boundary         = 2,
 debug_level              = 0,
+io_form_auxhist23	 = 2,
+auxhist23_interval	 = 180, 180,
+frames_per_auxhist23	 = 1, 1,
+auxhist23_outname	 = "TerpWRF_d<domain>_<date>",
+iofields_filename	 = "io_fields_d01.txt","io_fields_d02.txt",
 /
 
 &domains                 
@@ -51,7 +56,7 @@ i_parent_start           = 1,       154
 j_parent_start           = 1,       104
 parent_grid_ratio        = 1,        4
 parent_time_step_ratio   = 1,        4
-feedback                 = 1,
+feedback                 = 0,
 smooth_option            = 0,
 /
 
@@ -114,4 +119,13 @@ nested                   = .false.,   .true.,   .true.,
 nio_tasks_per_group      = 0,
 nio_groups               = 1,
 /
-                                                                                                                                                      
+
+&diags
+p_lev_diags		= 1,
+num_press_levels	= 10,
+press_levels		= 100000, 92500, 85000, 70000, 60000, 50000, 40000, 30000, 25000, 20000,
+extrap_below_grnd	= 2,
+/                                                                                                                          
+&afwa
+afwa_diag_opt		= 1, 1,
+/

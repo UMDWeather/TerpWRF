@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+# TerpWRF-plotbot
+# script that watches for new TerpWRF output
+# and plots it once its completed
+# C. Martin - 7/2016
+import sys
+import datetime as dt
+import wrfpy.wrfdb as wrfdb
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+import subprocess
+import os
+
+childwd = '/home/wrf/TerpWRF/scripts'
+# model run
+if len(sys.argv) != 2:
+  print 'wrong usage:'
+  print 'TerpWRF-plotbot /path/to/output'
+  sys.exit(1)
+datadir = sys.argv[1]
+
+class PlotBot(FileSystemEventHandler):
+        def on_created(self, event): # when new file is created by the LDM
+                if os.path.isdir(event.src_path): # ignore new directories
+                        pass
+                else:
+                        ncfile = event.src_path
+			print ncfile
+			child = 'TerpWRF-plot '+ncfile
+			try:
+                          sp = subprocess.Popen(childwd+'/'+child,cwd=childwd,shell=True)
+			except:
+			  pass
+
+observer = Observer()
+event_handler = PlotBot() # create event handler
+observer.schedule(event_handler, path=datadir,recursive=True)
+observer.start()
+
+observer.join()

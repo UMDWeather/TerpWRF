@@ -1,0 +1,14 @@
+#!/bin/bash
+# TerpWRF-daemon
+# cronjob to see if its time to run
+# the model or not based off of new
+# initial conditions
+# C. Martin - 12/13/15
+source ~wrf/.bashrc
+
+cd /home/wrf/TerpWRF/scripts
+
+module load mpi
+
+python TerpWRF-start
+

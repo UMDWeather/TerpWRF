@@ -1,0 +1,134 @@
+#!/usr/bin/env python
+"""
+ TerpWRF-plot
+ Plotting program for TerpWRF-plotbot
+ to create TerpWRF plots
+ C. Martin - 7/2016
+"""
+import netCDF4 as nc
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap
+import numpy as np
+import sys
+import datetime as dt
+import importlib
+from glob import glob
+import os
+import time
+
+if len(sys.argv) != 2:
+  print 'wrong usage:'
+  print 'TerpWRf-plot <path to file>'
+  sys.exit(1)
+
+filepath = sys.argv[1] # file to plot
+
+# get parameters from file
+outputroot = '/var/www/html/products/netcdf/TerpWRF' # root output directory
+outputfile = filepath.split('/') 
+modelrun = outputfile[-2][4:] # TerpWRF model run
+modeloutdir = outputfile[1:-1]
+prevfile = ''
+for a in modeloutdir:
+  prevfile = prevfile+'/'+a
+modelstart = dt.datetime.strptime(modelrun,'%Y%m%d%H')
+filehr = outputfile[-1][-19:]
+filehr = dt.datetime.strptime(filehr,'%Y-%m-%d_%H:%M:%S') # what time the file is valid for
+validhr = filehr - modelstart 
+validhr = validhr.total_seconds()/3600. # hours since initialization of output file
+validhr = int(validhr)
+dom = outputfile[-1][-23:] # domain for plotting
+dom = dom[:3]
+outputDir = outputroot+'/'+modelrun
+prevhr = filehr - dt.timedelta(hours=3)
+prevtime = '/TerpWRF_'+dom+'_'+prevhr.strftime('%Y-%m-%d_%H:%M:%S')
+prevfile = prevfile + prevtime
+
+# create output dir if it doesn't exist
+if not os.path.exists(outputDir):
+    os.makedirs(outputDir)
+
+#time.sleep(120) # sleep for 2 minutes to allow writing to file to complete)
+
+# load in all the plotting plugins
+plugins=[]
+for p in glob('plot_plugins/[a-zA-Z]*py'):
+  md='plot_plugins.'+p.split('/')[-1].split('.')[0]
+  plugins.append(importlib.import_module(md))
+
+# read in the file
+ncd = nc.Dataset(filepath)
+domain={}
+domain['start'] = dt.datetime.strptime(ncd.START_DATE,"%Y-%m-%d_%H:%M:%S")
+lats  = ncd.variables['XLAT'][0]
+lons  = ncd.variables['XLONG'][0]
+pltenv={}
+
+# if first file, read it twice, otherwise read in previous file
+if validhr == 0: 
+  prevncd = nc.Dataset(filepath)
+else:
+  prevncd = nc.Dataset(prevfile)
+
+if dom  =='d02':
+  m= Basemap(width=600000, height=400000, rsphere=(6378137.00,6356752.3142),
+            resolution='h',area_thresh=1000.,projection='lcc',
+            lat_1=39,lat_2=39,lat_0=39,lon_0=-77.5)
+
+else :
+  m= Basemap(width=4300000, height=3100000, rsphere=(6378137.00,6356752.3142),
+            resolution='l',area_thresh=1000.,projection='lcc',
+            lat_1=37.5,lat_2=37.5,lat_0=37.5,lon_0=-84.)
+
+x,y = m(lons,lats)
+
+pltenv['map'] = m
+pltenv['x'] = x
+pltenv['y'] = y
+
+#-------------
+# plot plugins
+for p in plugins:
+    fig = plt.figure(figsize=(14,11))
+    ax=fig.add_axes([0.03,0.1,0.94,0.8])
+    pltenv['ax']=ax
+
+    ctime = filehr  
+
+    #annotations, boundaries, etc
+    ax.annotate('init:  '+domain['start'].strftime('%Y-%m-%d %HZ'),xy=(1,1.05),fontsize=15,
+              xycoords="axes fraction", horizontalalignment='right')
+    ax.annotate('valid: '+ctime.strftime('%Y-%m-%d %HZ'),xy=(1,1.01),fontsize=15,
+              xycoords="axes fraction", horizontalalignment='right')
+    ax.annotate('Univ. of Maryland - Dept. of Atmos. & Oceanic. Sci.',
+              xy=(-0.005,0), xycoords=('axes fraction'),rotation=90,horizontalalignment='right',verticalalignment='bottom',
+              color='Black',fontsize=12)
+    ax.annotate('Trowal - UMD Weather - http://trowal.weather.umd.edu',
+              xy=(1.01,0), xycoords=('axes fraction'),rotation=90,horizontalalignment='left',verticalalignment='bottom',
+              color='Black',fontsize=12)
+    ax.annotate('EXPERIMENTAL TerpWRF', xy=(0,1.01), xycoords=('axes fraction'), horizontalalignment='left',
+              verticalalignment='bottom', color='red')
+    pltenv['map'].drawcoastlines(color= p.boundaryColor)
+    pltenv['map'].drawcountries(color=p.boundaryColor)
+    pltenv['map'].drawcounties(color=p.boundaryColor)
+    pltenv['map'].drawstates(color=p.boundaryColor)
+
+    plt.title(p.title,fontweight='bold')
+
+    p.plot(ncd.variables,prevncd.variables, pltenv)
+
+    #colorbar
+    pos = ax.get_position()
+    l, b, w, h = pos.bounds
+    ch = 0.015
+    cw = 0.8
+    cax=plt.axes([l + w*(1-cw)/2,b-ch-0.005,w*cw,ch])
+    cb = plt.colorbar(cax=cax, orientation='horizontal')
+    cb.set_label(p.cbarlabel)
+
+
+    plt.savefig(outputDir+'/{0}_F{1:03d}_{2}.png'.format(p.filename,validhr,dom))
+    plt.close('all')
+

@@ -1,0 +1,41 @@
+#!/usr/bin/env python
+# TerpWRF-watchdog
+# C. Martin - 5/2016
+# checks mySQL database for recent entry,
+# if it's older than a certain time period, email people 
+
+import wrfpy.wrfdb as wrfdb
+import datetime as dt
+
+nhours = 6 # amount of time to give before flagging for error
+me = 'TerpWRF Alert-Bot <no-reply@trowal.weather.umd.edu>' # from address
+# emails to alert
+sendto = ['cmart90@umd.edu','dkleist@umd.edu','tjarcomano@yahoo.com']
+
+email = 0 # flag to send email, starts at 'no'
+now = dt.datetime.now()
+oktime = now - dt.timedelta(hours = nhours)
+
+# try to find the most recent status
+try:
+  status = wrfdb.last()
+  lasttime = status[3]
+except:
+  email = 1
+
+if lasttime < oktime:
+  email = 1
+
+import smtplib
+from email.mime.text import MIMEText
+if email == 1:
+  msg = MIMEText('The TerpWRF Alert-Bot has determined that TerpWRF has not changed its status in '+str(nhours)+' hours.\nThe last status update was the following:\n'+str(status[1])+' at '+str(lasttime)+'.\nPlease notify the appropriate lifeforms.\n-TerpWRF Alert-Bot')
+  msg['Subject'] = 'TerpWRF has not ran in '+str(nhours)+' hours'
+  msg['From'] = me
+  msg['To'] = 'undisclosed-recipients'
+
+  # Send the message via our own SMTP server, but don't include the
+  # envelope header.
+  s = smtplib.SMTP('localhost')
+  s.sendmail(me, sendto, msg.as_string())
+  s.quit()
