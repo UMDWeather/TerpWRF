@@ -135,6 +135,17 @@ def run():
     log.info('WRF run complete')
     time.sleep(120)
     sp1.kill() # kill plotbot
+    
+    # create text output and meteograms
+    log.info('Creating meteograms and text output...')
+    sp = subprocess.Popen('python /home/wrf/TerpWRF/scripts/TerpWRF-stations',cwd=tmpDir, shell=True)
+    sp.wait() 
+    
+    # create soundings
+    log.info('Creating simulated soundings...')
+    sp = subprocess.Popen('python /home/wrf/TerpWRF/scripts/TerpWRF-soundings',cwd=tmpDir, shell=True)
+    sp.wait() 
+
     return startdate
 
 

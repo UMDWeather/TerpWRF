@@ -29,7 +29,7 @@ if lasttime < oktime:
 import smtplib
 from email.mime.text import MIMEText
 if email == 1:
-  msg = MIMEText('The TerpWRF Alert-Bot has determined that TerpWRF has not changed its status in '+str(nhours)+' hours.\nThe last status update was the following:\n'+str(status[1])+' at '+str(lasttime)+'.\nPlease notify the appropriate lifeforms.\n-TerpWRF Alert-Bot')
+  msg = MIMEText('The TerpWRF Alert-Bot has determined that TerpWRF has not changed its status in '+str(nhours)+' hours.\nThe last status update was the following:\n'+str(status[1])+' at '+str(lasttime)+'.\nPlease notify the appropriate lifeforms.\nI will attempt to delete the lock file to start again, but hanging jobs must be manually stopped.\n-TerpWRF Alert-Bot')
   msg['Subject'] = 'TerpWRF has not ran in '+str(nhours)+' hours'
   msg['From'] = me
   msg['To'] = 'undisclosed-recipients'
@@ -39,3 +39,5 @@ if email == 1:
   s = smtplib.SMTP('localhost')
   s.sendmail(me, sendto, msg.as_string())
   s.quit()
+  # attempt to delete the lock file
+  os.remove('/home/wrf/tmp/wrfCron.lck')
