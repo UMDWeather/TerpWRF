@@ -34,8 +34,10 @@ def plot(variables,prev_vars,pltenv):
  
     u.shape = v.shape
 
-    dX = 12000
-    dY = dX
+    #dX = 16000
+    #dY = dX
+    dX = pltenv['dX']
+    dY = pltenv['dY']    
 
     dV = (np.gradient(v))
     Vgradient = dV[-1]/dX

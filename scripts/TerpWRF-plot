@@ -76,11 +76,15 @@ if dom  =='d02':
   m= Basemap(width=600000, height=400000, rsphere=(6378137.00,6356752.3142),
             resolution='h',area_thresh=1000.,projection='lcc',
             lat_1=39,lat_2=39,lat_0=39,lon_0=-77.5)
+  pltenv['dX'] = 4000.
+  pltenv['dY'] = 4000.
 
 else :
   m= Basemap(width=4300000, height=3100000, rsphere=(6378137.00,6356752.3142),
             resolution='l',area_thresh=1000.,projection='lcc',
             lat_1=37.5,lat_2=37.5,lat_0=37.5,lon_0=-84.)
+  pltenv['dX'] = 16000.
+  pltenv['dY'] = 16000.
 
 x,y = m(lons,lats)
 
@@ -108,7 +112,7 @@ for p in plugins:
     ax.annotate('Trowal - UMD Weather - http://trowal.weather.umd.edu',
               xy=(1.01,0), xycoords=('axes fraction'),rotation=90,horizontalalignment='left',verticalalignment='bottom',
               color='Black',fontsize=12)
-    ax.annotate('EXPERIMENTAL TerpWRF', xy=(0,1.01), xycoords=('axes fraction'), horizontalalignment='left',
+    ax.annotate('TerpWRF v1.0', xy=(0,1.01), xycoords=('axes fraction'), horizontalalignment='left',
               verticalalignment='bottom', color='red')
     pltenv['map'].drawcoastlines(color= p.boundaryColor)
     pltenv['map'].drawcountries(color=p.boundaryColor)

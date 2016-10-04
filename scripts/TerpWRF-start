@@ -128,9 +128,14 @@ if startdate:
         shutil.rmtree(d)
     
     # archive WRF data on Bjerknes
-    #for f in wrffiles:
-    #   sp=subprocess.Popen('scp '+f+' bjerknes.umd.edu:/raid/WRFarchive/.')
-
+    try:
+      archivedir = '/mnt/bjerknes/'+startdate.strftime("/wrf_%Y%m%d%H")
+      os.makedirs(archivedir)
+      wrffiles = glob(tmpDir+startdate.strftime("/wrf_%Y%m%d%H/TerpWRF*"))
+      for f in wrffiles:
+	 shutil.copy(f,archivedir+'/.')
+    except:
+      pass
 log.debug('Removing old runs')
 dirs = sorted(glob(outputDir+'/??????????'))
 cutoff = (dt.datetime.utcnow()-dt.timedelta(days=maxOutput)).strftime('%Y%m%d%H')

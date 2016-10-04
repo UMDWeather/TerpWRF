@@ -136,6 +136,7 @@ def run():
     time.sleep(120)
     sp1.kill() # kill plotbot
     
+    wrfdb.status('Misc. products being generated',8,startdate.strftime("%HZ"))
     # create text output and meteograms
     log.info('Creating meteograms and text output...')
     sp = subprocess.Popen('python /home/wrf/TerpWRF/scripts/TerpWRF-stations',cwd=tmpDir, shell=True)

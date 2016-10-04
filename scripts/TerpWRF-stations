@@ -1,0 +1,301 @@
+#!/usr/bin/env python
+""" TerpWRF-stations
+    Extract variables at each MOS station
+    and create model based:
+    - meteograms
+    - text guidance
+    C. Martin - 9/2016
+"""
+import netCDF4 as nc
+import matplotlib as mpl; mpl.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
+import glob
+import os
+import shutil
+import datetime as dt
+from metpy.plots import SkewT, Hodograph
+from metpy.calc import get_wind_components, get_wind_speed, get_wind_dir, lcl, dry_lapse, parcel_profile
+from metpy.units import units, concatenate
+import matplotlib.gridspec as gridspec
+
+# get most recent model runtime
+wrfdir = '/home/wrf/tmp'
+newest = sorted(glob.iglob(wrfdir+'/wrf_*'))[-1]
+newest = newest.split('/')
+runtime = dt.datetime.strptime(newest[-1],"wrf_%Y%m%d%H")
+
+# get list of stations to process
+stationfile = '/var/www/html/models/GridInterp/stations_nws.html'
+headers = []
+stations = []
+for line in open(stationfile):
+  if line.startswith('K'):
+    headers.append(line.rstrip())
+    stations.append(line.rstrip().split())
+  else:
+    continue
+
+codes = [] ; lats = []; lons=[]
+for station in stations:
+  codes.append(station[0])
+  lats.append(station[-2])
+  lons.append(station[-1])
+
+from math import pi
+def findpoint(latvar,lonvar,lat0,lon0):
+    '''
+    Find closest point in a set of (lat,lon) points to specified point
+    latvar - 2D latitude variable from an open netCDF dataset
+    lonvar - 2D longitude variable from an open netCDF dataset
+    lat0,lon0 - query point
+    Returns iy,ix such that the square of the tunnel distance
+    between (latval[it,ix],lonval[iy,ix]) and (lat0,lon0)
+    is minimum.
+    From Unidata python workshop
+    '''
+    rad_factor = pi/180.0 # for trignometry, need angles in radians
+    # Read latitude and longitude from file into numpy arrays
+    latvals = latvar[:] * rad_factor
+    lonvals = lonvar[:] * rad_factor
+    ny,nx = latvals.shape
+    lat0_rad = lat0 * rad_factor
+    lon0_rad = lon0 * rad_factor
+    # Compute numpy arrays for all values, no loops
+    clat,clon = np.cos(latvals),np.cos(lonvals)
+    slat,slon = np.sin(latvals),np.sin(lonvals)
+    delX = np.cos(lat0_rad)*np.cos(lon0_rad) - clat*clon
+    delY = np.cos(lat0_rad)*np.sin(lon0_rad) - clat*slon
+    delZ = np.sin(lat0_rad) - slat;
+    dist_sq = delX**2 + delY**2 + delZ**2
+    minindex_1d = dist_sq.argmin()  # 1D index of minimum element
+    iy_min,ix_min = np.unravel_index(minindex_1d, latvals.shape)
+    return iy_min,ix_min
+
+# get coordinates / domain from each station
+eyes = []
+jays = []
+doms = []
+d1 = wrfdir+'/wrf_'+runtime.strftime('%Y%m%d%H')+'/'+'TerpWRF_d01_*'
+d2 = wrfdir+'/wrf_'+runtime.strftime('%Y%m%d%H')+'/'+'TerpWRF_d02_*'
+d1f = glob.glob(d1)
+d2f = glob.glob(d2)
+
+d1 = nc.MFDataset(d1f)
+d2 = nc.MFDataset(d2f)
+
+lats1 = d1.variables['XLAT'][0]
+lons1 = d1.variables['XLONG'][0]
+lats2 = d2.variables['XLAT'][0]
+lons2 = d2.variables['XLONG'][0]
+
+# get extent of high-res domain
+lat1 = np.min(lats2) ; lat2 = np.max(lats2)
+lon1 = np.min(lons2) ; lon2 = np.max(lons2)
+# get extent of low-res domain
+lat11 = np.min(lats1) ; lat12 = np.max(lats1)
+lon11 = np.min(lons1) ; lon12 = np.max(lons1)
+
+for b in range(len(stations)):
+  if float(lats[b][:-1]) >= lat1 and float(lats[b][:-1]) <= lat2 and -float(lons[b][:-1]) >= lon1 and -float(lons[b][:-1]) <= lon2: 
+    j,i = findpoint(lats2,lons2,float(lats[b][:-1]),-float(lons[b][:-1]))
+    doms.append(2)
+  elif float(lats[b][:-1]) >= lat11 and float(lats[b][:-1]) <= lat12 and -float(lons[b][:-1]) >= lon11 and -float(lons[b][:-1]) <= lon12: 
+    j,i = findpoint(lats1,lons1,float(lats[b][:-1]),-float(lons[b][:-1]))
+    doms.append(1)
+  else:
+    doms.append(0)
+  eyes.append(i)
+  jays.append(j)
+
+# open up the text product file for writing
+textfile = '/var/www/html/products/ourtext/GridInterp/'+'tmp_'+'TerpWRF_'+runtime.strftime('%Y%m%d%H')
+fcsthrs = [6,12,18,24,30,36,48,54,60,66,72,84,96] # columns for text file
+f = open(textfile,'w')
+
+mdir = '/var/www/html/products/netcdf/TerpWRF/'+runtime.strftime('%Y%m%d%H')
+
+# grab and plot/write out the data
+for b in range(len(stations)):
+  if doms[b] == 2:
+    ncd = d2
+  elif doms[b] == 1:
+    ncd = d1
+  else:
+    f.write('\n Station : '+codes[b]+' is not in TerpWRF domain...')
+    f.write('\n\n---------------------------------------------------------------------------------------------------------------------\n')
+    f.write('- End Record - \n')
+    continue
+  timestamps = ncd.variables['Times'][:]
+  timestamps = [''.join(timestamps[t]) for t in range(len(timestamps))]
+  timestamps = [dt.datetime.strptime(timestamps[t],'%Y-%m-%d_%H:%M:%S') for t in range(len(timestamps))]
+  # surface data
+  T2 = ncd.variables['T2'][:,jays[b],eyes[b]]
+  T2 = ((T2 - 273.15)*1.8) + 32. # this is America, and we like Fahrenheit
+  Q2 = ncd.variables['Q2'][:,jays[b],eyes[b]] 
+  U10 = ncd.variables['U10'][:,jays[b],eyes[b]] * 1.943844492 # knots
+  V10 = ncd.variables['V10'][:,jays[b],eyes[b]] * 1.943844492 # convert to knots
+  Spd10 = get_wind_speed(U10*units('knots'),V10*units('knots'))
+  Dir10 = get_wind_dir(U10*units('knots'),V10*units('knots'))
+  MSLP = ncd.variables['AFWA_MSLP'][:,jays[b],eyes[b]] * 0.01 # hPa
+  precip = (ncd.variables['RAINNC'][:,jays[b],eyes[b]]+ncd.variables['RAINC'][:,jays[b],eyes[b]])*0.03937
+  A = 2.53e9;B = 5.42e3;e = 0.622
+  Td = B / (np.log((A*e)/(Q2*MSLP)))
+  Td = ((Td - 273.15)*1.8) + 32.
+  
+  ####### Meteogram #######
+  fig = plt.figure(figsize=(11,8.5))
+  # top panel
+  ax1 = plt.subplot2grid((5, 1), (0, 0))
+  ax1.grid(True)
+  ax1.set_ylabel('Temp/Dew Pt. (F)',fontsize=9)
+  ax1.set_ylim([0,120])
+  ax1.yaxis.tick_right()
+  ax1.tick_params(axis='y', which='major', labelsize=9)
+  ax1.plot_date(timestamps,T2,color='red')
+  ax1.plot_date(timestamps,Td,color='green')
+  # second panel
+  ax2 = plt.subplot2grid((5, 1), (1, 0))
+  ax2.grid(True)
+  ax2.set_ylabel('MSLP (mb)',fontsize=9)
+  ax2.set_ylim([990,1030])
+  ax2.yaxis.tick_right()
+  ax2.tick_params(axis='y', which='major', labelsize=9)
+  ax2.plot_date(timestamps,MSLP)
+  # third panel
+  ax3 = plt.subplot2grid((5, 1), (2, 0))
+  ax3.set_ylabel('Wind Vector',fontsize=9)
+  barbzeros = np.zeros(len(timestamps))
+  barbx = np.arange(0,len(timestamps),1)
+  ax3.barbs(barbx,barbzeros,U10,V10,clip_on=False)
+  ax3.set_xlim([0,len(timestamps)-1])
+  ax3.xaxis.set_ticks(np.arange(0,len(timestamps),6))
+  ax3.yaxis.tick_right()
+  ax3.tick_params(axis='y', which='major', labelsize=9)
+  # fourth panel
+  ax4 = plt.subplot2grid((5, 1), (3, 0))
+  ax4.grid(True)
+  ax4.set_ylabel('QPF to Hour (in.)',fontsize=9)
+  ax4.set_ylim([0,12])
+  ax4.yaxis.tick_right()
+  ax4.plot_date(timestamps,precip)
+  ax4.tick_params(axis='y', which='major', labelsize=9) 
+  # make plot look nice  
+  # xticks
+  for ax in [ax1,ax2,ax3]:
+    plt.setp(ax.get_xticklabels(),visible=False)
+  plt.setp(ax3.get_yticklabels(),visible=False)
+  ax4.xaxis.set_major_formatter(mpl.dates.DateFormatter('%b%d %H:%MZ')) # sets date format of x tick labels
+  plt.xticks(rotation=70)
+  for tick in ax4.xaxis.get_majorticklabels():
+    tick.set_horizontalalignment("right")
+  ax1.annotate('Initialized:     '+runtime.strftime('%Y-%m-%d %HZ'),xy=(1,1.1),fontsize=9, xycoords="axes fraction", horizontalalignment='right')
+  ax1.annotate(codes[b],xy=(0,1.1),fontsize=19, xycoords="axes fraction", horizontalalignment='left')
+  ax1.annotate('Model:TerpWRF Station:'+codes[b],xy=(1,1.25),fontsize=9, xycoords="axes fraction", horizontalalignment='right')
+  ax1.annotate('University of Maryland - Dept. of Atmospheric and Oceanic Science',
+              xy=(0.5,0.05), xycoords=('figure fraction'),horizontalalignment='center',verticalalignment='bottom',fontsize=12)
+  ax1.annotate('http://trowal.weather.umd.edu',
+              xy=(0.5,0.01), xycoords=('figure fraction'),horizontalalignment='center',verticalalignment='bottom',
+              color='gray',fontsize=12)
+  ax1.annotate('EXPERIMENTAL', xy=(0,0.01), xycoords=('figure fraction'), horizontalalignment='left',
+              verticalalignment='bottom', color='red')
+
+  plt.savefig(mdir+'/meteogram_{0}.png'.format(codes[b]))
+  plt.close('all')
+
+  ###### upper air data #####
+  P_P = ncd.variables['P_PL'][:,:]*0.01
+  T_P = ncd.variables['T_PL'][:,:,jays[b],eyes[b]]
+  T_P =  T_P - 273.15
+  TD_P = ncd.variables['TD_PL'][:,:,jays[b],eyes[b]]
+  TD_P =  TD_P - 273.15
+  U_P = ncd.variables['U_PL'][:,:,jays[b],eyes[b]]
+  V_P = ncd.variables['V_PL'][:,:,jays[b],eyes[b]]
+  Ws_P = ncd.variables['S_PL'][:,:,jays[b],eyes[b]] * 1.943844492 # convert to knots
+  HGT_P = ncd.variables['GHT_PL'][:,:,jays[b],eyes[b]]
+  T_P = T_P*units.degC ; TD_P = TD_P*units.degC
+  P_P = P_P*units.mbar
+  U_P = U_P*units('m/s') ; V_P = V_P*units('m/s')
+  Wd_P = get_wind_dir(U_P.to('knots'),V_P.to('knots'))
+  ###### Text Output ##### 
+  ti = [fcsthrs[iii]/3 for iii in range(len(fcsthrs))] 
+  f.write(str(headers[b])+'\n') 
+  f.write('TerpWRF Initialization time: '+runtime.strftime('%Y-%m-%d %H')+'Z\n')
+  f.write('Parameter/Time\t006\t012\t018\t024\t030\t036\t048\t054\t060\t066\t072\t084\t096\n')
+  f.write('--------------\t-----------------------------------------------------------------------------------------------------\n')
+  f.write('   Day/Hour')
+  for hr in fcsthrs:
+     f.write('\t'+dt.datetime.strftime(runtime+dt.timedelta(hours=hr),'%d/%H'))
+  f.write('\n')
+  f.write('---------------------------------------------------------------------------------------------------------------------\n')
+  #- temps -#
+  f.write('Temps\n')
+  f.write(' SFC (2 M) (F)')
+  for hr in ti:
+    f.write('\t'+str(int(T2[hr])))
+  f.write('\n 850 mb (C)')
+  for hr in ti:
+    f.write('\t'+str(int(T_P[hr,2].magnitude))) 
+  f.write('\n 700 mb (C)')
+  for hr in ti:
+    f.write('\t'+str(int(T_P[hr,3].magnitude))) 
+  f.write('\n 500 mb (C)')
+  for hr in ti:
+    f.write('\t'+str(int(T_P[hr,5].magnitude))) 
+  f.write('\n 1000-500 (dam)')
+  for hr in ti:
+    f.write('\t'+str(int((HGT_P[hr,5]-HGT_P[hr,0])/10.))) 
+  f.write('\n\n---------------------------------------------------------------------------------------------------------------------\n')
+  #- moisture -#
+  f.write('Moisture\n')
+  f.write(' SFC Dew (F)')
+  for hr in ti:
+    f.write('\t'+str(int(Td[hr])))  
+  f.write('\n 850 Dew (C)')
+  for hr in ti:
+    f.write('\t'+str(int(TD_P[hr,2].magnitude))) 
+  f.write('\n 700 Dew (C)')
+  for hr in ti:
+    f.write('\t'+str(int(TD_P[hr,3].magnitude))) 
+  f.write('\n 500 Dew (C)')
+  for hr in ti:
+    f.write('\t'+str(int(TD_P[hr,5].magnitude))) 
+  f.write('\n Total QPF (in)')
+  for hr in ti: 
+    f.write('\t'+str(round(precip[hr],2)))
+  f.write('\n\n---------------------------------------------------------------------------------------------------------------------\n')
+  #- winds -#
+  f.write('Winds Spd/Dir\n')
+  f.write(' 10m\t')
+  for hr in ti:
+    f.write('\t'+str(int(Spd10[hr].magnitude))+'/%03d'%(Dir10[hr].magnitude))
+  f.write('\n 850 winds')
+  for hr in ti:
+    f.write('\t'+str(int(Ws_P[hr,2]))+'/%03d'%(Wd_P[hr,2].magnitude))  
+  f.write('\n 700 winds')
+  for hr in ti:
+    f.write('\t'+str(int(Ws_P[hr,3]))+'/%03d'%(Wd_P[hr,3].magnitude))  
+  f.write('\n 500 winds')
+  for hr in ti:
+    f.write('\t'+str(int(Ws_P[hr,5]))+'/%03d'%(Wd_P[hr,5].magnitude)) 
+  f.write('\n 250 winds')
+  for hr in ti:
+    f.write('\t'+str(int(Ws_P[hr,8]))+'/%03d'%(Wd_P[hr,8].magnitude)) 
+  f.write('\n\n---------------------------------------------------------------------------------------------------------------------\n')
+  #- misc -#
+  f.write('Other\n')
+  f.write(' MSLP (mb)')
+  for hr in ti:
+    f.write('\t'+str(int(MSLP[hr])))
+  f.write('\n 500 hgt (dam)')
+  for hr in ti:
+    f.write('\t'+str(int((HGT_P[hr,5])/10.)))
+  f.write('\n\n---------------------------------------------------------------------------------------------------------------------\n')
+  f.write('- End Record - \n')
+  f.flush() # write to disk
+f.close()
+
+# move temp file to location so website is more responsive
+# this will alleviate anyone getting a blank screen while the script is running
+finalfile = '/var/www/html/products/ourtext/GridInterp/'+'TerpWRF_'+runtime.strftime('%Y%m%d%H')
+shutil.move(textfile,finalfile)

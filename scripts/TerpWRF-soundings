@@ -1,0 +1,152 @@
+#!/usr/bin/env python
+""" TerpWRF-soundings
+    create model simulated forecast soundings
+    at specified locations at certain model time steps
+    C. Martin - 9/2016
+"""
+import netCDF4 as nc
+import matplotlib as mpl; mpl.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
+import glob
+import os
+import shutil
+import datetime as dt
+from metpy.plots import SkewT, Hodograph
+from metpy.calc import get_wind_components, get_wind_speed, get_wind_dir, lcl, dry_lapse, parcel_profile
+from metpy.units import units, concatenate
+import matplotlib.gridspec as gridspec
+
+# get most recent model runtime
+wrfdir = '/home/wrf/tmp'
+newest = sorted(glob.iglob(wrfdir+'/wrf_*'))[-1]
+newest = newest.split('/')
+runtime = dt.datetime.strptime(newest[-1],"wrf_%Y%m%d%H")
+
+# get list of stations to process
+stationfile = '/home/wrf/TerpWRF/scripts/sounding_stations'
+headers = []
+stations = []
+for line in open(stationfile):
+  if line.startswith('K'):
+    headers.append(line.rstrip())
+    stations.append(line.rstrip().split())
+  else:
+    continue
+
+codes = [] ; lats = []; lons=[]
+for station in stations:
+  codes.append(station[0])
+  lats.append(station[-2])
+  lons.append(station[-1])
+
+from math import pi
+def findpoint(latvar,lonvar,lat0,lon0):
+    '''
+    Find closest point in a set of (lat,lon) points to specified point
+    latvar - 2D latitude variable from an open netCDF dataset
+    lonvar - 2D longitude variable from an open netCDF dataset
+    lat0,lon0 - query point
+    Returns iy,ix such that the square of the tunnel distance
+    between (latval[it,ix],lonval[iy,ix]) and (lat0,lon0)
+    is minimum.
+    From Unidata python workshop
+    '''
+    rad_factor = pi/180.0 # for trignometry, need angles in radians
+    # Read latitude and longitude from file into numpy arrays
+    latvals = latvar[:] * rad_factor
+    lonvals = lonvar[:] * rad_factor
+    ny,nx = latvals.shape
+    lat0_rad = lat0 * rad_factor
+    lon0_rad = lon0 * rad_factor
+    # Compute numpy arrays for all values, no loops
+    clat,clon = np.cos(latvals),np.cos(lonvals)
+    slat,slon = np.sin(latvals),np.sin(lonvals)
+    delX = np.cos(lat0_rad)*np.cos(lon0_rad) - clat*clon
+    delY = np.cos(lat0_rad)*np.sin(lon0_rad) - clat*slon
+    delZ = np.sin(lat0_rad) - slat;
+    dist_sq = delX**2 + delY**2 + delZ**2
+    minindex_1d = dist_sq.argmin()  # 1D index of minimum element
+    iy_min,ix_min = np.unravel_index(minindex_1d, latvals.shape)
+    return iy_min,ix_min
+
+# get coordinates / domain from each station
+eyes = []
+jays = []
+doms = []
+# only care about inner domain, code copied from TerpWRF-stations
+d2 = wrfdir+'/wrf_'+runtime.strftime('%Y%m%d%H')+'/'+'TerpWRF_d02_*'
+d2f = glob.glob(d2)
+
+d2 = nc.MFDataset(d2f)
+
+lats2 = d2.variables['XLAT'][0]
+lons2 = d2.variables['XLONG'][0]
+
+for b in range(len(stations)):
+  j,i = findpoint(lats2,lons2,float(lats[b][:-1]),-float(lons[b][:-1]))
+  eyes.append(i)
+  jays.append(j)
+
+soundhrs = [6,12,18,24,30,36,42,48,60,72,84,96]
+mdir = '/var/www/html/products/netcdf/TerpWRF/'+runtime.strftime('%Y%m%d%H')
+
+# grab and plot/write out the data
+for b in range(len(stations)):
+  ncd = d2 # done out of laziness so I can copy from TerpWRF-stations
+  ###### upper air data #####
+  timestamps = ncd.variables['Times'][:]
+  timestamps = [''.join(timestamps[t]) for t in range(len(timestamps))]
+  timestamps = [dt.datetime.strptime(timestamps[t],'%Y-%m-%d_%H:%M:%S') for t in range(len(timestamps))]
+  P_P = ncd.variables['P_PL'][:,:]*0.01
+  T_P = ncd.variables['T_PL'][:,:,jays[b],eyes[b]]
+  T_P =  T_P - 273.15
+  TD_P = ncd.variables['TD_PL'][:,:,jays[b],eyes[b]]
+  TD_P =  TD_P - 273.15
+  U_P = ncd.variables['U_PL'][:,:,jays[b],eyes[b]]
+  V_P = ncd.variables['V_PL'][:,:,jays[b],eyes[b]]
+  Ws_P = ncd.variables['S_PL'][:,:,jays[b],eyes[b]] * 1.943844492 # convert to knots
+  HGT_P = ncd.variables['GHT_PL'][:,:,jays[b],eyes[b]]
+  T_P = T_P*units.degC ; TD_P = TD_P*units.degC
+  P_P = P_P*units.mbar
+  U_P = U_P*units('m/s') ; V_P = V_P*units('m/s')
+  Wd_P = get_wind_dir(U_P.to('knots'),V_P.to('knots'))
+  #### Skew-Ts ####
+  for hr in soundhrs:
+    t = hr/3
+    fig = plt.figure(figsize=(12, 9))
+    gs = gridspec.GridSpec(3, 3)
+    skew = SkewT(fig, rotation=45, subplot=gs[:, :2])
+    skew.ax.set_ylim(1000, 100)
+    skew.ax.set_xlim(-30, 40)
+    ax = fig.add_subplot(gs[0, -1])
+    h = Hodograph(ax, component_range=60.)
+    h.add_grid(increment=20)
+    skew.plot(P_P[t],T_P[t],'r')
+    skew.plot(P_P[t],TD_P[t],'g')
+    skew.plot_barbs(P_P[t],U_P[t].to('knots'),V_P[t].to('knots'))
+    skew.plot_dry_adiabats()
+    skew.plot_moist_adiabats()
+    skew.plot_mixing_lines()
+    h.plot_colormapped(U_P[t].to('knots'),V_P[t].to('knots'),Ws_P[t])
+    l = lcl(P_P[t,0],T_P[t,0],TD_P[t,0])
+    lcl_temp = dry_lapse(concatenate((P_P[t,0], l)), T_P[t,0])[-1]
+    skew.plot(l, lcl_temp, 'ko', markerfacecolor='black')
+    plt.annotate('LCL: '+str(round(l.magnitude,1))+'mb, '+str(round(lcl_temp.magnitude,1))+'C',xy=(0.67,0.60),xycoords='figure fraction',horizontalalignment='left',verticalalignment='top',fontsize=12)
+    # surface based parcel
+    prof = parcel_profile(P_P[t],T_P[t,0],TD_P[t,0]).to('degC')
+    skew.plot(P_P[t], prof, 'k', linewidth=2)
+    skew.ax.fill_betweenx(P_P[t], T_P[t], prof, where=T_P[t]>=prof, facecolor='blue', alpha=0.4)
+    skew.ax.fill_betweenx(P_P[t], T_P[t], prof, where=T_P[t]<prof, facecolor='red', alpha=0.4)
+
+    dstep = 0 + t*3 # assumes 3-hourly files
+    plt.annotate(codes[b],xy=(0.02,0.98),xycoords='figure fraction',horizontalalignment='left',verticalalignment='top',fontsize=15)
+    plt.annotate('Simulated Point Sounding - TerpWRF',xy=(0.02,0.95),xycoords='figure fraction',horizontalalignment='left',verticalalignment='top',fontsize=12)
+    plt.annotate('Init: '+runtime.strftime('%Y-%m-%d %HZ'),xy=(0.98,0.98),xycoords='figure fraction',horizontalalignment='right',verticalalignment='top',fontsize=15)
+    plt.annotate('Valid: '+timestamps[t].strftime('%Y-%m-%d %HZ'),xy=(0.98,0.95),xycoords='figure fraction',horizontalalignment='right',verticalalignment='top',fontsize=15)
+    plt.annotate('Trowal - UMD Weather - http://trowal.weather.umd.edu',
+              xy=(0.02,0.02), xycoords=('figure fraction'),rotation=90,horizontalalignment='left',verticalalignment='bottom',
+              color='Black',fontsize=12)
+    plt.savefig(mdir+'/sounding_F%03d_'% (dstep)+codes[b]+'.png')
+    plt.close('all')
+  
